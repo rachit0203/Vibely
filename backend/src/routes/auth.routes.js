@@ -1,5 +1,5 @@
 import express from "express"
-import { login, logout, onBoard, signup } from "../contollers/auth.controllers.js";
+import { login, logout, onboard, signup } from "../contollers/auth.controllers.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router(); 
@@ -10,7 +10,7 @@ router.post("/login", login)
 
 router.post("/logout", logout)
 
-router.post("/onboarding", protectRoute, onBoard)
+router.post("/onboarding", protectRoute, onboard)
 
 
 // check if user is authenticated of not 

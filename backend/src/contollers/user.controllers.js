@@ -52,7 +52,7 @@ export async function sendFriendRequest(req, res) {
         const recipient = await User.findById(recipientId);
 
         if (!recipient) {
-            return res.status(404).json({message: "Recipent not found "})
+            return res.status(404).json({message: "recipient not found "})
         }
 
         // check if user is already friend 
@@ -134,7 +134,7 @@ export async function getFriendRequest(req, res) {
         const acceptedReqs = await FriendRequest.find({
             sender: req.user.id,
             status: "accepted"
-        }).populate("recipent", "fullName profilePic" );
+        }).populate("recipient", "fullName profilePic" );
 
         res.status(200).json((incomingReqs, acceptedReqs));
 
@@ -149,7 +149,7 @@ export async function getOutgoingFriendRequests(req, res) {
         const outgointRequests = await FriendRequest.find({
             sender: req.user.id,
             status: "pending",
-        }).populate("recipent", "fullname profilePic nativeLanguage learningLanguage ");
+        }).populate("recipient", "fullname profilePic nativeLanguage learningLanguage ");
 
         res.status(200).json(outgointRequests)
 
