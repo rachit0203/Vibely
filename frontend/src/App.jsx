@@ -11,9 +11,9 @@ import ChatPage from "./pages/ChatPage.jsx";;
 import OnboardingPage from "./pages/OnboardingPage.jsx";
 
 import { Toaster } from "react-hot-toast";
-import PageLoader from './Componenets/PageLoader.jsx';
+import PageLoader from './components/PageLoader.jsx';
 import useAuthUser from './hooks/useAuthUser.js';
-import Layout from './Componenets/Layout.jsx';
+import Layout from './components/Layout.jsx';
 import { useThemeStore } from "./store/useThemeStore.js"
 const App = () => {
   
