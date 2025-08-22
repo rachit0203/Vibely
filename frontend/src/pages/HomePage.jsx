@@ -28,7 +28,7 @@ const HomePage = () => {
     queryFn: getUserFriends,
   });
 
-  const { data: recommendedUsers = [], isLoading: loadingUsers, error: usersError } = useQuery({
+  const { data: recommendedUsers = [], isLoading: isLoadingUsers, error: usersError } = useQuery({
     queryKey: ["users"],
     queryFn: getRecommendedUsers,
     // initialData: [] // Ensure it's always an array
@@ -39,10 +39,20 @@ const HomePage = () => {
     queryFn: getOutgoingFriendReqs,
   });
 
-  const { mutate: sendRequestMutation, isPending } = useMutation({
-    mutationFn: sendFriendRequest,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] }),
+  const [loadingUsers, setLoadingUsers] = useState({});
+
+  const { mutate: sendRequestMutation } = useMutation({
+    mutationFn: async (userId) => {
+      setLoadingUsers(prev => ({ ...prev, [userId]: true }));
+      try {
+        await sendFriendRequest(userId);
+      } finally {
+        setLoadingUsers(prev => ({ ...prev, [userId]: false }));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+    },
   });
 
   useEffect(() => {
@@ -97,7 +107,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          {loadingUsers ? (
+          {isLoadingUsers ? (
             <div className="flex justify-center py-12">
               <span className="loading loading-spinner loading-lg" />
             </div>
@@ -170,7 +180,7 @@ const HomePage = () => {
                           hasRequestBeenSent ? "btn-disabled" : "btn-primary"
                         } `}
                         onClick={() => sendRequestMutation(user._id)}
-                        disabled={hasRequestBeenSent || isPending}
+                        disabled={hasRequestBeenSent || loadingUsers[user._id]}
                       >
                         {hasRequestBeenSent ? (
                           <>
