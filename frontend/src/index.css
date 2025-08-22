@@ -2,99 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile-first styles */
-.str-chat__channel {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  background: linear-gradient(to bottom, #c9e8c9, #b7e7bb);
-  height: 100vh;
-  max-height: -webkit-fill-available; /* For mobile viewport height */
-  padding: 0;
-  margin: 0;
+:root {
+  --chat-container-height: 93vh;
+}
+
+/* Reset Stream Chat container styles */
+.str-chat {
+  height: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
 }
 
 .str-chat__container {
-  width: 100%;
-  max-width: 1200px;
   height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
   margin: 0 !important;
-  border-radius: 0;
-  box-shadow: none;
-  background-color: #ffffff;
-  color: #1a1a1a;
-  display: flex;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.str-chat__channel {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column;
+  background: #f9f9f9;
+}
+
+.str-chat__main-panel {
+  height: 100% !important;
+  display: flex !important;
   flex-direction: column;
 }
 
-.str-chat__list {
-  background-color: #ffffff;
-  padding: 0.5rem;
-  flex-grow: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+.str-chat__thread {
+  z-index: 10;
 }
 
-.str-chat__list-notifications {
-  display: none;
-}
-
-.str-chat__message-input {
-  border-top: 1px solid #ddd;
-  background-color: #ffffff;
-  padding: 0.75rem;
-  position: sticky;
-  bottom: 0;
-  background: white;
-}
-
-/* Desktop styles */
-@media (min-width: 768px) {
-  .str-chat__channel {
-    padding: 1rem;
-    align-items: center;
-  }
-  
+/* Mobile optimizations */
+@media (max-width: 768px) {
   .str-chat__container {
-    height: 90% !important;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
   }
   
-  .str-chat__list {
-    padding: 1rem;
+  .str-chat__main-panel {
+    width: 100% !important;
+  }
+  
+  .str-chat__message-list {
+    padding-bottom: 1rem;
   }
 }
 
-/* Dark theme */
-[data-theme="dark"] .str-chat__channel {
-  background: linear-gradient(to bottom, #1a2e1a, #0f1e10);
+/* Better scrollbar for webkit browsers */
+.str-chat__message-list-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
-[data-theme="dark"] .str-chat__container,
-[data-theme="dark"] .str-chat__list,
-[data-theme="dark"] .str-chat__message-input {
-  background-color: #1f2937;
-  color: #f3f4f6;
+.str-chat__message-list-scroll::-webkit-scrollbar {
+  width: 6px;
 }
 
-[data-theme="dark"] .str-chat__message-input {
-  border-top-color: #374151;
+.str-chat__message-list-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
 }
 
-[data-theme="dark"] .str-chat__message-text-inner {
-  color: #f3f4f6;
+.str-chat__message-list-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
 }
 
-[data-theme="dark"] .str-chat__textarea textarea {
-  background-color: #1f2937;
-  color: #f3f4f6;
-  border-color: #374151;
+.str-chat__message-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
-/* Fix for mobile input zoom on focus */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-  .str-chat__textarea textarea {
-    font-size: 16px !important;
-  }
+/* Ensure message input is visible */
+.str-chat__input-flat {
+  padding: 1rem;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+}
+
+/* Make sure messages are properly spaced */
+.str-chat__message {
+  margin: 0.5rem 0;
+}
+
+/* Improve mobile touch targets */
+.str-chat__message-textarea textarea {
+  min-height: 44px !important;
+  padding: 10px !important;
 }
