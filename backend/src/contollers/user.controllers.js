@@ -113,7 +113,7 @@ export async function acceptFriendRequest(req, res) {
         });
 
         await User.findByIdAndUpdate(friendRequest.recipient, {
-            $addToSet: {friends: friendRequest.recipient}
+            $addToSet: {friends: friendRequest.sender}
         });
 
         res.status(200).json({message: "Friend request accepted"});
@@ -127,7 +127,7 @@ export async function acceptFriendRequest(req, res) {
 export async function getFriendRequest(req, res) {
     try {
         const incomingReqs = await FriendRequest.find({
-            sender: req.user.id,
+            recipient: req.user.id,
             status: "pending",
         }).populate("sender", "fullName profilePic nativeLanguage learningLanguage ");
 
@@ -136,7 +136,10 @@ export async function getFriendRequest(req, res) {
             status: "accepted"
         }).populate("recipient", "fullName profilePic" );
 
-        res.status(200).json((incomingReqs, acceptedReqs));
+        res.status(200).json({
+            incomingReqs,
+            acceptedReqs
+        });
 
     } catch (error) {
         console.error("Error in get pendingFriendRequest controller ", error.message);

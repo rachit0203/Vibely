@@ -2,8 +2,6 @@ import { useState } from "react";
 import { ShipWheelIcon } from "lucide-react";
 import { Link } from "react-router";
 import useLogin from "../hooks/useLogin";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { login } from "../lib/api";
 
 const LoginPage = () => {
   const [loginData, setLoginData] = useState({
