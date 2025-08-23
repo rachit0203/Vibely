@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-.str-chat__channel {
+/* .str-chat__channel {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,4 +31,4 @@
 
 .str-chat__message-input {
   border-top: 1px solid #ddd;
-}
+} */

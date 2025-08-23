@@ -3,11 +3,13 @@ import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, LogOutIcon, ShipWheelIcon } from "lucide-react";
 import ThemeSelector from "./ThemeSelector";
 import useLogout from "../hooks/useLogout";
+import useFriendRequests from "../hooks/useFriendRequests";
 
 const Navbar = () => {
   const { authUser } = useAuthUser();
   const location = useLocation();
   const isChatPage = location.pathname?.startsWith("/chat");
+  const { incomingRequests } = useFriendRequests();
 
   // const queryClient = useQueryClient();
   // const { mutate: logoutMutation } = useMutation({
@@ -25,31 +27,42 @@ const Navbar = () => {
           {isChatPage && (
             <div className="pl-5">
               <Link to="/" className="flex items-center gap-2.5">
-                <ShipWheelIcon className="size-9 text-primary" />
-                <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
-                  Streamify
+                <img
+                  src="/public/chat.png"
+                  alt="Vibely logo"
+                  className="size-8"
+                />
+                <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
+                  Vibely
                 </span>
               </Link>
             </div>
           )}
 
           <div className="flex items-center gap-3 sm:gap-4 ml-auto">
-            <Link to={"/notifications"}>
-              <button className="btn btn-ghost btn-circle">
+            <Link to={"/notifications"} className="indicator">
+              <button className="btn btn-ghost btn-circle relative">
                 <BellIcon className="h-6 w-6 text-base-content opacity-70" />
+                {incomingRequests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 badge badge-primary border-0 w-5 h-4 min-h-4 flex items-center justify-center p-0 text-xs">
+                    {incomingRequests.length}
+                  </span>
+                )}
               </button>
             </Link>
           </div>
 
           <ThemeSelector />
 
-          <div className="avatar">
-            <div className="w-9 rounded-full">
-              <img
-                src={authUser?.profilePic}
-                alt="User Avatar"
-                rel="noreferrer"
-              />
+          <div className="tooltip tooltip-bottom" data-tip={authUser?.fullName}>
+            <div className="avatar">
+              <div className="w-9 rounded-full">
+                <img
+                  src={authUser?.profilePic}
+                  alt="User Avatar"
+                  rel="noreferrer"
+                />
+              </div>
             </div>
           </div>
 
