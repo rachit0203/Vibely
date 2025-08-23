@@ -1,10 +1,11 @@
 {
-  "name": "streamify",
+  "name": "steamify",
   "version": "1.0.0",
+  "description": "Streamify is a full-stack video calling and chat application built with modern web technologies. It allows users to make video calls and chat in real-time with a clean and intuitive user interface.",
   "main": "index.js",
   "scripts": {
     "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
-    "start": "npm start --prefix backend"
+    "start": "npm run start --prefix backend"
   },
   "repository": {
     "type": "git",
@@ -16,6 +17,5 @@
   "bugs": {
     "url": "https://github.com/rachit0203/Steamify/issues"
   },
-  "homepage": "https://github.com/rachit0203/Steamify#readme",
-  "description": ""
+  "homepage": "https://github.com/rachit0203/Steamify#readme"
 }

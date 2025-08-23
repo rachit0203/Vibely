@@ -28,7 +28,7 @@ const Navbar = () => {
             <div className="pl-5">
               <Link to="/" className="flex items-center gap-2.5">
                 <img
-                  src="/public/chat.png"
+                  src="/chat.png"
                   alt="Vibely logo"
                   className="size-8"
                 />

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {toast } from "react-hot-toast";
 import { completeOnboarding } from "../lib/api";
 import {
+  CameraIcon,
   LoaderIcon,
   MapPinIcon,
   ShipWheelIcon,

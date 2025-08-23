@@ -6,7 +6,7 @@ const apiKey = process.env.STREAM_API_KEY;
 const apiSecret = process.env.STREAM_API_SECRET;
 
 if (!apiKey || !apiSecret) {
-    res.status(400).json({message: "Stream API Key or Secret is missing "});
+    throw new Error("Stream API Key or Secret is missing ");
 }
 
 const streamClient = StreamChat.getInstance(apiKey, apiSecret);
@@ -16,7 +16,7 @@ export const upsertStreamUser = async (userData) => {
         const result = await streamClient.upsertUsers([userData]);
         return result.users[userData.id];
     } catch (error) {
-        console.error("Error upserting Stream User ");
+        console.error("Error upserting Stream User ", error);
     }
 };
 
