@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { acceptFriendRequest, getFriendRequests } from "../lib/api";
+import { acceptFriendRequest, declineFriendRequest, getFriendRequests } from "../lib/api";
 import {
   BellIcon,
   ClockIcon,
@@ -19,11 +19,18 @@ const NotificationsPage = () => {
     queryFn: getFriendRequests,
   });
 
-  const { mutate: acceptRequestMutation, isPending } = useMutation({
+  const { mutate: acceptRequestMutation, isPending: isAcceptPending } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
+    },
+  });
+
+  const { mutate: declineRequestMutation, isPending: isDeclinePending } = useMutation({
+    mutationFn: declineFriendRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
     },
   });
 
@@ -199,11 +206,11 @@ const NotificationsPage = () => {
                                     onClick={() =>
                                       acceptRequestMutation(request._id)
                                     }
-                                    disabled={isPending}
+                                    disabled={isAcceptPending}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                   >
-                                    {isPending ? (
+                                    {isAcceptPending ? (
                                       <span className="loading loading-spinner loading-sm mr-2"></span>
                                     ) : (
                                       <UserCheckIcon className="h-4 w-4 mr-2" />
@@ -212,11 +219,17 @@ const NotificationsPage = () => {
                                   </motion.button>
                                   <motion.button
                                     className="btn btn-outline btn-error px-4 py-2"
+                                    onClick={() => declineRequestMutation(request._id)}
+                                    disabled={isDeclinePending}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                   >
-                                    <X className="h-4 w-4 mr-2" />
-                                    Decline
+                                    {isDeclinePending ? (
+                                      <span className="loading loading-spinner loading-sm mr-2"></span>
+                                    ) : (
+                                      <X className="h-4 w-4 mr-2" />
+                                    )}
+                                    {isDeclinePending ? 'Declining...' : 'Decline'}
                                   </motion.button>
                                 </div>
                               </div>

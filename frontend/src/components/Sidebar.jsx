@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, HomeIcon, ShipWheelIcon, UsersIcon } from "lucide-react";
+import useFriendRequests from "../hooks/useFriendRequests";
 
 const Sidebar = () => {
   const { authUser } = useAuthUser();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { incomingRequests } = useFriendRequests();
 
   return (
     <aside className="w-64 bg-base-200 border-r border-base-300 hidden lg:flex flex-col h-screen sticky top-0">
@@ -29,15 +31,22 @@ const Sidebar = () => {
           <span>Home</span>
         </Link>
 
-        <Link
-          to="/friends"
-          className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
-            currentPath === "/friends" ? "btn-active" : ""
-          }`}
-        >
-          <UsersIcon className="size-5 text-base-content opacity-70" />
-          <span>Friends</span>
-        </Link>
+        <div className="relative">
+          <Link
+            to="/friends"
+            className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+              currentPath === "/friends" ? "btn-active" : ""
+            }`}
+          >
+            <UsersIcon className="size-5 text-base-content opacity-70" />
+            <span>Friends</span>
+            {incomingRequests.length > 0 && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 badge badge-primary border-0 w-5 h-5 min-h-0 flex items-center justify-center p-0 text-xs">
+                {incomingRequests.length}
+              </span>
+            )}
+          </Link>
+        </div>
 
         <Link
           to="/notifications"
@@ -52,20 +61,22 @@ const Sidebar = () => {
 
       {/* USER PROFILE SECTION */}
       <div className="p-4 border-t border-base-300 mt-auto">
-        <div className="flex items-center gap-3">
-          <div className="avatar">
-            <div className="w-10 rounded-full">
-              <img src={authUser?.profilePic} alt="User Avatar" />
+        <Link to="/profile" className="block hover:bg-base-300 rounded-lg p-2 -m-2 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="avatar">
+              <div className="w-10 rounded-full">
+                <img src={authUser?.profilePic} alt="User Avatar" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">{authUser?.fullName}</p>
+              <p className="text-xs text-success flex items-center gap-1">
+                <span className="size-2 rounded-full bg-success inline-block" />
+                Online
+              </p>
             </div>
           </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm">{authUser?.fullName}</p>
-            <p className="text-xs text-success flex items-center gap-1">
-              <span className="size-2 rounded-full bg-success inline-block" />
-              Online
-            </p>
-          </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );

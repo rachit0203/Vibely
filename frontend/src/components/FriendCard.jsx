@@ -1,27 +1,17 @@
 import { Link } from "react-router";
 import { LANGUAGE_TO_FLAG } from "../constants";
-import { MessageSquare, UserCheck, UserX, MessageCircle, Video, MoreHorizontal } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { acceptFriendRequest, rejectFriendRequest } from "../lib/api";
+import { MessageSquare, UserCheck, UserX, MessageCircle, Video, MoreHorizontal, Trash2, User } from "lucide-react";
 import { useState } from "react";
 
-const FriendCard = ({ friend, isPending = false }) => {
-  const queryClient = useQueryClient();
+const FriendCard = ({ friend, onRemoveFriend }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const { mutate: acceptRequest } = useMutation({
-    mutationFn: () => acceptFriendRequest(friend._id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-    },
-  });
-
-  const { mutate: rejectRequest } = useMutation({
-    mutationFn: () => rejectFriendRequest(friend._id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-    },
-  });
+  const handleRemoveClick = (e) => {
+    e.preventDefault();
+    onRemoveFriend && onRemoveFriend(friend._id, friend.fullName);
+    setIsMenuOpen(false);
+  };
 
   return (
     <div 
@@ -53,21 +43,39 @@ const FriendCard = ({ friend, isPending = false }) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
-              <h3 className="font-bold text-lg truncate">{friend.fullName}</h3>
+              <div>
+                <h3 className="font-bold text-lg truncate">{friend.fullName}</h3>
+                <p className={`text-xs ${friend.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                  {friend.isOnline ? 'Online Now' : 'Last seen recently'}
+                </p>
+              </div>
               <div className="dropdown dropdown-end">
-                <div tabIndex={0} role="button" className="btn btn-ghost btn-xs btn-circle opacity-70 hover:opacity-100">
-                  <MoreHorizontal size={16} />
-                </div>
-                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-40">
-                  <li><a>View Profile</a></li>
-                  <li><a>Remove Friend</a></li>
-                  <li><a>Block</a></li>
-                </ul>
+                <button 
+                  className="btn btn-sm btn-ghost"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsMenuOpen(!isMenuOpen);
+                  }}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {isMenuOpen && (
+                  <ul 
+                    tabIndex={0} 
+                    className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 border border-base-300"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <li>
+                      <a onClick={handleRemoveClick} className="text-error">
+                        <Trash2 className="w-4 h-4" />
+                        Remove Friend
+                      </a>
+                    </li>
+                  </ul>
+                )}
               </div>
             </div>
-            <p className={`text-sm ${friend.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-              {friend.isOnline ? 'Online Now' : 'Last seen recently'}
-            </p>
           </div>
         </div>
 
@@ -124,7 +132,6 @@ const FriendCard = ({ friend, isPending = false }) => {
 };
 
 export default FriendCard;
-
 export function getLanguageFlag(language) {
   if (!language) return null;
 
@@ -142,3 +149,4 @@ export function getLanguageFlag(language) {
   }
   return null;
 }
+

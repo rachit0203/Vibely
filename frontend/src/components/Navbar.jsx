@@ -55,15 +55,17 @@ const Navbar = () => {
           <ThemeSelector />
 
           <div className="tooltip tooltip-bottom" data-tip={authUser?.fullName}>
-            <div className="avatar">
-              <div className="w-9 rounded-full">
-                <img
-                  src={authUser?.profilePic}
-                  alt="User Avatar"
-                  rel="noreferrer"
-                />
+            <Link to="/profile" className="cursor-pointer">
+              <div className="avatar">
+                <div className="w-9 rounded-full">
+                  <img
+                    src={authUser?.profilePic}
+                    alt="User Avatar"
+                    rel="noreferrer"
+                  />
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Logout button */}

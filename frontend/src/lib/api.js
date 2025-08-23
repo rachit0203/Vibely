@@ -72,3 +72,18 @@ export const rejectFriendRequest = async (requestId) => {
   const res = await axiosInstance.put(`/users/friend-request/${requestId}/reject`);
   return res.data;
 }
+
+export const updateProfile = async (data) => {
+  const response = await axiosInstance.patch("/users/profile", data);
+  return response.data;
+};
+
+export const removeFriend = async (friendId) => {
+  const response = await axiosInstance.delete(`/users/friends/${friendId}`);
+  return response.data;
+};
+
+export const declineFriendRequest = async (requestId) => {
+  const response = await axiosInstance.delete(`/users/friend-requests/${requestId}/decline`);
+  return response.data;
+};
