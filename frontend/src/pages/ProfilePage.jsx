@@ -48,7 +48,7 @@ const ProfilePage = () => {
   const onSubmit = (data) => {
     updateProfileMutation({
       ...data,
-      ...(profilePic && { profilePic }) // Include profilePic in the update if it exists
+      profilePic: profilePic || null// Include profilePic in the update if it exists
     });
   };
 
