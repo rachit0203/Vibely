@@ -21,24 +21,26 @@ const __dirname = path.resolve();
 // Trust Render/Proxies to ensure secure cookies work behind proxy
 app.set("trust proxy", 1);
 
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            const allowedOrigins = [
-                "http://localhost:5173",
-                "http://localhost:5001",
-                process.env.CLIENT_URL,
-            ].filter(Boolean);
+// Configure CORS
+const corsOptions = {
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            "http://localhost:5173",
+            "http://localhost:5001",
+            "https://govibely.onrender.com",
+            process.env.CLIENT_URL,
+        ].filter(Boolean);
 
-            // Allow requests with no origin (like mobile apps or curl) and same-origin
-            if (!origin || allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-            return callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
-        },
-        credentials: true, // allow frontend to send cookies 
-    })
-);
+        // Allow requests with no origin (like mobile apps or curl) and same-origin
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        console.log(`CORS blocked for origin: ${origin}`);
+        return callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
+    },
+    credentials: true, // allow frontend to send cookies 
+};
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -48,10 +50,21 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 
-// Serve static files from the frontend
-const staticPath = path.join(__dirname, "../frontend/dist");
-if (process.env.NODE_ENV === "production" || fs.existsSync(staticPath)) {
-    app.use(express.static(staticPath));
+// Serve static files from the frontend in production
+if (process.env.NODE_ENV === "production") {
+    const staticPath = path.join(__dirname, "../../frontend/dist");
+    
+    // Serve static files
+    app.use(express.static(staticPath, {
+        setHeaders: (res, path) => {
+            // Set proper MIME types for CSS and JS files
+            if (path.endsWith('.css')) {
+                res.setHeader('Content-Type', 'text/css');
+            } else if (path.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+            }
+        }
+    }));
     
     // Handle SPA client-side routing - return index.html for all other routes
     app.get('*', (req, res) => {

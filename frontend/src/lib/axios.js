@@ -1,13 +1,17 @@
 import axios from "axios";
 
 const apiUrlFromEnv = import.meta.env.VITE_API_URL;
-const isDevelopment = import.meta.env.MODE === "development";
+const isProduction = import.meta.env.PROD;
 
-// Use relative URL when running on the same port, otherwise use full URL
+// Use relative URL in production, full URL in development
 const getBaseURL = () => {
     if (apiUrlFromEnv) return apiUrlFromEnv;
-    if (window.location.port === '5001') return '/api';
-    return isDevelopment ? 'http://localhost:5001/api' : '/api';
+    if (isProduction) {
+        // In production, use relative URL for same-origin requests
+        return '/api';
+    }
+    // In development, use the development server URL
+    return 'http://localhost:5001/api';
 };
 
 export const axiosInstance = axios.create({
