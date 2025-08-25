@@ -42,24 +42,14 @@ const FriendCard = ({ friend, onRemoveFriend }) => {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start gap-2 w-full">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center">
-                  <h3 
-                    className="font-bold text-lg sm:text-base xs:text-sm truncate"
-                    style={{
-                      fontSize: 'clamp(0.875rem, 4vw, 1.125rem)'
-                    }}
-                    title={friend.fullName}
-                  >
-                    {friend.fullName}
-                  </h3>
-                </div>
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-bold text-lg truncate">{friend.fullName}</h3>
                 <p className={`text-xs ${friend.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
                   {friend.isOnline ? 'Online Now' : 'Last seen recently'}
                 </p>
               </div>
-              <div className="dropdown dropdown-end flex-shrink-0">
+              <div className="dropdown dropdown-end">
                 <button 
                   className="btn btn-sm btn-ghost"
                   onClick={(e) => {

@@ -1,59 +1,171 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, UserPlus, UserPlus2, UserCheck, X, UserX, Clock } from "lucide-react";
-import { useFriends } from "../hooks/useFriends";
+import { 
+  getFriendRequests, 
+  getOutgoingFriendReqs, 
+  getRecommendedUsers, 
+  getUserFriends, 
+  sendFriendRequest, 
+  acceptFriendRequest, 
+  declineFriendRequest,
+  removeFriend 
+} from "../lib/api";
 import FriendCard from "../components/FriendCard";
-import EmptyState from "../components/friends/EmptyState";
-import RequestCard from "../components/friends/RequestCard";
-import FriendRecommendationCard from "../components/friends/FriendRecommendationCard";
+import { Search, Users, UserPlus, UserCheck, X, UserX, Clock, UserPlus2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const FriendsPage = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const containerRef = useRef(null);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const queryClient = useQueryClient();
+  const [loadingStates, setLoadingStates] = useState({});
 
-  // Use the custom hook for friend-related data and actions
-  const {
-    friends,
-    incomingRequests,
-    outgoingRequests,
-    recommendedUsers,
-    isLoading,
-    loadingStates,
-    sendRequest,
-    acceptRequest,
-    declineRequest,
-    cancelRequest,
-    handleRemoveFriend,
-  } = useFriends();
+  // Fetch all necessary data
+  const { data: friends = [], isLoading: isLoadingFriends } = useQuery({
+    queryKey: ["friends"],
+    queryFn: getUserFriends,
+  });
+
+  const { data: friendRequestsData = { incomingReqs: [] }, isLoading: isLoadingIncoming } = useQuery({
+    queryKey: ["incomingFriendRequests"],
+    queryFn: getFriendRequests,
+  });
+  
+  const incomingRequests = friendRequestsData.incomingReqs || [];
+
+  const { data: outgoingRequests = [], isLoading: isLoadingOutgoing } = useQuery({
+    queryKey: ["outgoingFriendReqs"],
+    queryFn: getOutgoingFriendReqs,
+  });
+
+  const { data: recommendedUsers = [], isLoading: isLoadingRecommended } = useQuery({
+    queryKey: ["recommendedUsers"],
+    queryFn: getRecommendedUsers,
+    enabled: activeTab === 'add',
+  });
+
+  const isLoading = isLoadingFriends || isLoadingIncoming || isLoadingOutgoing || isLoadingRecommended;
+  const onlineFriends = friends.filter((friend) => friend.isOnline);
 
   // Filter functions
   const filterFriends = (friend) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      friend.fullName?.toLowerCase().includes(query) ||
-      friend.nativeLanguage?.toLowerCase().includes(query) ||
-      friend.learningLanguage?.toLowerCase().includes(query)
-    );
+    const matchesSearch = 
+      friend.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      friend.nativeLanguage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      friend.learningLanguage?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesSearch;
   };
 
-  // Filter data based on search query
   const filteredFriends = Array.isArray(friends) ? friends.filter(filterFriends) : [];
-  const onlineFriends = friends.filter((friend) => friend.isOnline);
   const filteredIncoming = incomingRequests.filter(req => 
     req?.sender?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const filteredOutgoing = outgoingRequests.filter(req =>
     req?.recipient?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredRecommended = Array.isArray(recommendedUsers) 
-    ? recommendedUsers.filter(user => 
-        user?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user?.nativeLanguage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user?.learningLanguage?.toLowerCase().includes(searchQuery.toLowerCase())
-      ) 
-    : [];
+  const filteredRecommended = Array.isArray(recommendedUsers) ? recommendedUsers.filter(user => 
+    user?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user?.nativeLanguage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user?.learningLanguage?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) : [];
+
+  // Mutations
+  const updateLoadingState = (id, isLoading) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      [id]: isLoading
+    }));
+  };
+
+  const { mutate: sendRequest } = useMutation({
+    mutationFn: async (userId) => {
+      updateLoadingState(`send-${userId}`, true);
+      try {
+        await sendFriendRequest(userId);
+        toast.success('Friend request sent!');
+      } finally {
+        updateLoadingState(`send-${userId}`, false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["outgoingFriendReqs"]);
+      queryClient.invalidateQueries(["recommendedUsers"]);
+    },
+  });
+
+  const { mutate: acceptRequest } = useMutation({
+    mutationFn: async (requestId) => {
+      updateLoadingState(`accept-${requestId}`, true);
+      try {
+        await acceptFriendRequest(requestId);
+        toast.success('Friend request accepted');
+      } finally {
+        updateLoadingState(`accept-${requestId}`, false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["incomingFriendRequests"]);
+      queryClient.invalidateQueries(["friends"]);
+    },
+  });
+
+  const { mutate: declineRequest } = useMutation({
+    mutationFn: async (requestId) => {
+      updateLoadingState(`decline-${requestId}`, true);
+      try {
+        await declineFriendRequest(requestId);
+        toast.success('Friend request declined');
+      } finally {
+        updateLoadingState(`decline-${requestId}`, false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["incomingFriendRequests"]);
+      queryClient.invalidateQueries(["outgoingFriendReqs"]);
+    },
+  });
+
+  const { mutate: cancelRequest } = useMutation({
+    mutationFn: async (requestId) => {
+      updateLoadingState(`cancel-${requestId}`, true);
+      try {
+        await declineFriendRequest(requestId);
+        toast.success('Friend request cancelled');
+      } finally {
+        updateLoadingState(`cancel-${requestId}`, false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["outgoingFriendReqs"]);
+      queryClient.invalidateQueries(["incomingFriendRequests"]);
+    },
+  });
+
+  const { mutate: removeFriendMutation } = useMutation({
+    mutationFn: async (friendId) => {
+      updateLoadingState(`remove-${friendId}`, true);
+      try {
+        await removeFriend(friendId);
+        toast.success('Friend removed');
+      } finally {
+        updateLoadingState(`remove-${friendId}`, false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["friends"]);
+    },
+  });
+
+  const handleRemoveFriend = (friendId, friendName) => {
+    if (window.confirm(`Are you sure you want to remove ${friendName} from your friends?`)) {
+      removeFriendMutation(friendId);
+    }
+  };
+
+  const containerRef = useRef(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Handle scroll effect for header shadow
   useEffect(() => {
@@ -70,19 +182,15 @@ const FriendsPage = () => {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          {Array(6).fill(0).map((_, i) => (
-            <motion.div
-              key={i}
-              className="card bg-base-200 h-56 rounded-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            />
-          ))}
-        </div>
-      );
+      return Array(6).fill(0).map((_, i) => (
+        <motion.div
+          key={i}
+          className="card bg-base-200 h-56 rounded-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.05 }}
+        />
+      ));
     }
 
     switch (activeTab) {
@@ -172,13 +280,54 @@ const FriendsPage = () => {
               const isLoading = loadingStates[`send-${user._id}`];
               
               return (
-                <FriendRecommendationCard
+                <motion.div
                   key={user._id}
-                  user={user}
-                  isRequestSent={isRequestSent}
-                  isLoading={isLoading}
-                  onAddFriend={sendRequest}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="card bg-base-100 border border-base-300 overflow-hidden"
+                >
+                  <div className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="avatar">
+                        <div className="w-12 h-12 rounded-full overflow-hidden">
+                          <img 
+                            src={user.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}`} 
+                            alt={user.fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{user.fullName}</h3>
+                        <p className="text-sm text-base-content/70 truncate">
+                          {user.nativeLanguage} Native • Learning {user.learningLanguage}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        onClick={() => !isRequestSent && sendRequest(user._id)}
+                        disabled={isRequestSent || isLoading}
+                        className={`btn btn-block btn-sm ${isRequestSent ? 'btn-disabled' : 'btn-primary'}`}
+                      >
+                        {isLoading ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : isRequestSent ? (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            Request Sent
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus2 className="w-4 h-4 mr-1" />
+                            Add Friend
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               );
             })}
           </div>
@@ -195,6 +344,101 @@ const FriendsPage = () => {
     }
   };
 
+  const EmptyState = ({ icon, title, description }) => (
+    <div className="col-span-full text-center py-16">
+      <div className="mx-auto w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mb-6 text-3xl">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-gray-500 text-lg">{description}</p>
+    </div>
+  );
+
+  const RequestCard = ({ type, request, onAccept, onDecline, onCancel, isLoading }) => {
+    const user = type === 'incoming' ? request.sender : request.recipient;
+    const isLoadingAccept = loadingStates[`accept-${request._id}`];
+    const isLoadingDecline = loadingStates[`decline-${request._id}`];
+    const isLoadingCancel = loadingStates[`cancel-${request._id}`];
+    const isProcessing = isLoadingAccept || isLoadingDecline || isLoadingCancel;
+
+    return (
+      <div className="card bg-base-100 border border-base-300 overflow-hidden">
+        <div className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="avatar">
+              <div className="w-12 h-12 rounded-full overflow-hidden">
+                <img 
+                  src={user.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}`} 
+                  alt={user.fullName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold">{user.fullName}</h3>
+              <div className="flex items-center gap-2 text-sm text-base-content/70 mt-1">
+                {type === 'incoming' ? (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Wants to be your friend</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    <span>Request sent</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 mt-4">
+            {type === 'incoming' ? (
+              <>
+                <button
+                  onClick={() => onAccept(request._id)}
+                  disabled={isProcessing || isLoading}
+                  className="btn btn-sm btn-primary flex-1 gap-2"
+                >
+                  {isLoadingAccept ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    <UserCheck className="w-4 h-4" />
+                  )}
+                  Accept
+                </button>
+                <button
+                  onClick={() => onDecline(request._id)}
+                  disabled={isProcessing || isLoading}
+                  className="btn btn-sm btn-ghost flex-1 gap-2"
+                >
+                  {isLoadingDecline ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    <X className="w-4 h-4" />
+                  )}
+                  Decline
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => onCancel(request._id)}
+                disabled={isProcessing || isLoading}
+                className="btn btn-sm btn-ghost w-full gap-2"
+              >
+                {isLoadingCancel ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  <UserX className="w-4 h-4" />
+                )}
+                Cancel Request
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-base-100">

@@ -255,7 +255,7 @@ export async function changePassword(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const isMatch = await user.matchPassword(currentPassword);
+        const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) {
             return res.status(400).json({ message: "Current password is incorrect" });
         }

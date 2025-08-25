@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/rachit0203/Steamify/issues"
   },
-  "homepage": "https://github.com/rachit0203/Steamify#readme"
+  "homepage": "https://github.com/rachit0203/Steamify#readme",
+  "dependencies": {
+    "multer": "^2.0.2"
+  }
 }
