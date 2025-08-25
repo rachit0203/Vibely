@@ -54,8 +54,25 @@ export const sendFriendRequest = async (userId) => {
 
 
 export const getFriendRequests = async () => {
-  const res = await axiosInstance.get(`/users/friend-requests`);
-  return res.data;
+  try {
+    console.log('Making request to /users/friend-requests');
+    const res = await axiosInstance.get(`/users/friend-requests`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    console.log('Friend requests response:', res);
+    return res.data;
+  } catch (error) {
+    console.error('Error in getFriendRequests:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: error.config
+    });
+    throw error;
+  }
 }
 
 export const acceptFriendRequest = async (requestId) => {
@@ -84,6 +101,11 @@ export const removeFriend = async (friendId) => {
 };
 
 export const declineFriendRequest = async (requestId) => {
-  const response = await axiosInstance.delete(`/users/friend-requests/${requestId}/decline`);
-  return response.data;
+    const res = await axiosInstance.delete(`/users/friend-requests/${requestId}/decline`);
+    return res.data;
+}
+
+export const deleteAccount = async (password) => {
+    const res = await axiosInstance.delete('/users/delete-account', { data: { password } });
+    return res.data;
 };

@@ -9,7 +9,8 @@ import {
     getRecommendedUser, 
     removeFriend,
     sendFriendRequest, 
-    updateUserProfile 
+    updateUserProfile,
+    deleteUserAccount
 } from "../controllers/user.controllers.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -32,5 +33,8 @@ router.patch("/change-password", changePassword);
 // New routes for friend management
 router.delete("/friends/:friendId", removeFriend);
 router.delete("/friend-requests/:requestId/decline", declineFriendRequest);
+
+// Delete account
+router.delete("/delete-account", deleteUserAccount);
 
 export default router;

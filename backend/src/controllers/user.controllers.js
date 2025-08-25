@@ -126,15 +126,23 @@ export async function acceptFriendRequest(req, res) {
 
 export async function getFriendRequest(req, res) {
     try {
-        const incomingReqs = await FriendRequest.find({
+        // Find incoming requests and populate sender info
+        let incomingReqs = await FriendRequest.find({
             recipient: req.user.id,
             status: "pending",
-        }).populate("sender", "fullName profilePic nativeLanguage learningLanguage ");
+        }).populate("sender", "fullName profilePic nativeLanguage learningLanguage");
 
-        const acceptedReqs = await FriendRequest.find({
-            sender: req.user.id,
-            status: "accepted"
-        }).populate("recipient", "fullName profilePic" );
+        // Find accepted requests and populate recipient info
+        let acceptedReqs = await FriendRequest.find({
+            $or: [
+                { sender: req.user.id, status: "accepted" },
+                { recipient: req.user.id, status: "accepted" }
+            ]
+        }).populate("recipient", "fullName profilePic");
+
+        // Filter out any requests with null sender or recipient
+        incomingReqs = incomingReqs.filter(req => req.sender);
+        acceptedReqs = acceptedReqs.filter(req => req.recipient);
 
         res.status(200).json({
             incomingReqs,
@@ -242,33 +250,64 @@ export async function changePassword(req, res) {
         const { currentPassword, newPassword } = req.body;
         const userId = req.user.id;
 
-        const user = await User.findById(userId).select("+password");
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        // Verify current password
-        const isPasswordValid = await user.matchPassword(currentPassword);
-        if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Current password is incorrect' });
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Current password is incorrect" });
         }
 
-        // Update password - the pre-save hook will handle hashing
         user.password = newPassword;
         await user.save();
 
-        res.status(200).json({ message: 'Password changed successfully' });
-
+        res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
-        console.error('Error in changePassword controller:', error.message);
-        
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ 
-                message: 'Validation error',
-                errors: Object.values(error.errors).map(err => err.message)
-            });
+        console.error("Error in changePassword controller: ", error.message);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function deleteUserAccount(req, res) {
+    try {
+        const userId = req.user.id;
+        const { password } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
-        
-        res.status(500).json({ message: 'Internal server error' });
+
+        // Verify password
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Incorrect password" });
+        }
+
+        // Delete user's friend requests (both sent and received)
+        await FriendRequest.deleteMany({
+            $or: [
+                { sender: userId },
+                { recipient: userId }
+            ]
+        });
+
+        // Remove user from friends' friends list
+        await User.updateMany(
+            { friends: userId },
+            { $pull: { friends: userId } }
+        );
+
+        // TODO: Add cleanup for any other user-related data (chats, messages, etc.)
+
+        // Finally, delete the user
+        await User.findByIdAndDelete(userId);
+
+        res.status(200).json({ message: "Account deleted successfully" });
+    } catch (error) {
+        console.error("Error in deleteUserAccount controller: ", error.message);
+        res.status(500).json({ message: "Internal server error" });
     }
 }

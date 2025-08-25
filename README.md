@@ -1,15 +1,17 @@
-# Streamify - Video Calling and Chat Application
+# Steamify - Video Calling and Chat Application
 
-Streamify is a full-stack video calling and chat application built with modern web technologies. It allows users to make video calls and chat in real-time with a clean and intuitive user interface.
+Steamify is a full-stack video calling and chat application built with modern web technologies. It allows users to make video calls and chat in real-time with a clean and intuitive user interface.
 
 ## 🌟 Features
 
-- 🔥 Real-time video calling
-- 💬 Group and private chat
-- 👥 User authentication and authorization
-- 🎨 Modern and responsive UI
-- 🚀 Built with React, Node.js, and MongoDB
+- 🔥 Real-time video calling with Stream Video SDK
+- 💬 Group and private chat with Stream Chat SDK
+- � User authentication using JWT
+- 🎨 Modern and responsive UI with Tailwind CSS
+- 🚀 Built with React 19, Vite, and Node.js
 - 📱 Mobile-friendly design
+- ⚡ Optimized performance with React Query
+- 🔄 State management with Zustand
 
 ## 🛠️ Tech Stack
 
@@ -22,15 +24,16 @@ Streamify is a full-stack video calling and chat application built with modern w
 - Zustand
 - Tailwind CSS with DaisyUI
 - React Router
+- Axios
 
 ### Backend
-- Node.js
-- Express.js
+- Node.js with Express.js
 - MongoDB with Mongoose
 - JWT Authentication
-- Socket.io (for real-time features)
+- WebRTC (via Stream SDK)
 - Cookie Parser
 - CORS
+- Environment-based configuration
 
 ## 🚀 Getting Started
 
@@ -39,14 +42,14 @@ Streamify is a full-stack video calling and chat application built with modern w
 - Node.js (v18 or higher)
 - npm (comes with Node.js)
 - MongoDB Atlas account or local MongoDB instance
-- Stream account (for video and chat SDKs)
+- Stream account with API keys for Video and Chat SDKs
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/Streamify.git
-   cd Streamify
+   git clone https://github.com/rachit0203/Steamify.git
+   cd Steamify
    ```
 
 2. **Install dependencies**
@@ -60,67 +63,60 @@ Streamify is a full-stack video calling and chat application built with modern w
    npm install
    ```
 
-3. **Set up environment variables**
+3. **Environment Setup**
+   - Copy `.env.example` to `.env` in both `backend` and `frontend` directories
+   - Update the environment variables with your Stream API keys and other configurations
 
-   Create a `.env` file in the `backend` directory with the following variables:
-   ```env
-   PORT=5001
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   STREAM_API_KEY=your_stream_api_key
-   STREAM_SECRET=your_stream_secret
-   ```
-
-   Create a `.env` file in the `frontend` directory with:
-   ```env
-   VITE_API_BASE_URL=http://localhost:5001
-   VITE_STREAM_API_KEY=your_stream_api_key
-   ```
-
-### Running the Application
-
-1. **Start the backend server**
+4. **Start the application**
    ```bash
+   # Start backend server (from project root)
    cd backend
-   npm start
-   ```
-
-2. **Start the frontend development server**
-   ```bash
+   npm run dev
+   
+   # In a new terminal, start frontend development server
    cd frontend
    npm run dev
    ```
 
-3. Open your browser and navigate to `http://localhost:5173`
+5. **Open in browser**
+   - Frontend will be available at `http://localhost:5173`
+   - Backend API will be available at `http://localhost:4000`
 
-## 📦 Build for Production
+## 📝 Project Structure
 
-```bash
-# Build the frontend for production
-cd frontend
-npm run build
-
-# The production build will be in the `frontend/dist` directory
+```
+Steamify/
+├── backend/           # Backend server code
+│   ├── src/
+│   │   ├── config/   # Configuration files
+│   │   ├── controllers/ # Route controllers
+│   │   ├── middleware/ # Custom middleware
+│   │   └── models/    # Database models
+│   └── package.json
+├── frontend/         # Frontend React application
+│   ├── public/       # Static files
+│   └── src/          # React source code
+│       ├── components/ # Reusable components
+│       ├── hooks/     # Custom React hooks
+│       ├── pages/     # Page components
+│       └── utils/     # Utility functions
+├── .env.example      # Example environment variables
+└── README.md         # This file
 ```
 
-## 🌐 Deployment
+## 🤝 Contributing
 
-The application can be deployed to platforms like:
-- Vercel (Frontend)
-- Render (Backend)
-- MongoDB Atlas (Database)
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📝 License
+## � License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Stream for their amazing video and chat SDKs
-- The open-source community for various libraries and tools
-
-## 📬 Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - your.email@example.com
-
-Project Link: [https://github.com/your-username/Streamify](https://github.com/your-username/Streamify)
+- Stream for their amazing Video and Chat SDKs
+- All contributors who have helped with this project

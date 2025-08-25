@@ -16,6 +16,7 @@ import { useThemeStore } from "./store/useThemeStore.js";
 import FriendsPage from "./pages/FriendsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
+import { AuthProvider } from "./context/AuthContext";
 const App = () => {
   const { isLoading, authUser } = useAuthUser();
 
@@ -27,7 +28,8 @@ const App = () => {
   if (isLoading) return <PageLoader />;
 
   return (
-    <div className="min-h-screen" data-theme={theme}>
+    <AuthProvider>
+      <div className="min-h-screen" data-theme={theme}>
       <Routes>
         <Route
           path="/"
@@ -148,8 +150,9 @@ const App = () => {
         />
       </Routes>
 
-      <Toaster />
-    </div>
+        <Toaster position="top-center" />
+      </div>
+    </AuthProvider>
   );
 };
 

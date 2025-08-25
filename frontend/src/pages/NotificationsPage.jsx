@@ -1,57 +1,42 @@
+import React from 'react';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { acceptFriendRequest, declineFriendRequest, getFriendRequests } from "../lib/api";
+import { 
+  acceptFriendRequest, 
+  declineFriendRequest, 
+  getFriendRequests 
+} from "../lib/api";
 import {
   BellIcon,
   ClockIcon,
   MessageSquareIcon,
+  RefreshCw,
   UserCheckIcon,
   UserPlus,
   X,
 } from "lucide-react";
 import NoNotificationsFound from "../components/NoNotificationsFound";
+import { toast } from 'react-hot-toast';
 
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
 
-  const { data: friendRequests, isLoading } = useQuery({
-    queryKey: ["friendRequests"],
-    queryFn: getFriendRequests,
-  });
-
-  const { mutate: acceptRequestMutation, isPending: isAcceptPending } = useMutation({
-    mutationFn: acceptFriendRequest,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-    },
-  });
-
-  const { mutate: declineRequestMutation, isPending: isDeclinePending } = useMutation({
-    mutationFn: declineFriendRequest,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
-    },
-  });
-
-  const incomingRequests = friendRequests?.incomingReqs || [];
-  const acceptedRequests = friendRequests?.acceptedReqs || [];
-
+  // Animation variants
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
         staggerChildren: 0.1,
-        delayChildren: 0.3,
+        delayChildren: 0.2,
       },
     },
   };
 
   const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: {
-      opacity: 1,
+    hidden: { opacity: 0, y: 10 },
+    show: { 
+      opacity: 1, 
       y: 0,
       transition: {
         type: "spring",
@@ -61,6 +46,120 @@ const NotificationsPage = () => {
     },
   };
 
+  // Fetch friend requests
+  const { 
+    data: friendRequests, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: ["friendRequests"],
+    queryFn: async () => {
+      try {
+        const data = await getFriendRequests();
+        // Ensure we always return the expected structure
+        return {
+          incomingReqs: Array.isArray(data?.incomingReqs) ? data.incomingReqs : [],
+          acceptedReqs: Array.isArray(data?.acceptedReqs) ? data.acceptedReqs : []
+        };
+      } catch (err) {
+        console.error('Error in queryFn:', err);
+        // Return empty arrays on error to prevent UI breakage
+        return { incomingReqs: [], acceptedReqs: [] };
+      }
+    },
+    retry: 2,
+    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Accept friend request mutation
+  const { mutate: acceptRequest, isPending: isAccepting } = useMutation({
+    mutationFn: acceptFriendRequest,
+    onSuccess: () => {
+      toast.success('Friend request accepted');
+      queryClient.invalidateQueries(["friendRequests"]);
+      queryClient.invalidateQueries(["friends"]);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to accept request');
+    },
+  });
+
+  // Decline friend request mutation
+  const { mutate: declineRequest, isPending: isDeclining } = useMutation({
+    mutationFn: declineFriendRequest,
+    onSuccess: () => {
+      toast.success('Friend request declined');
+      queryClient.invalidateQueries(["friendRequests"]);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to decline request');
+    },
+  });
+
+  // Process notifications data
+  const { incomingRequests, acceptedRequests } = React.useMemo(() => {
+    if (!friendRequests) return { incomingRequests: [], acceptedRequests: [] };
+    
+    return {
+      incomingRequests: (friendRequests.incomingReqs || []).filter(req => req?.sender),
+      acceptedRequests: (friendRequests.acceptedReqs || []).filter(req => req?.recipient)
+    };
+  }, [friendRequests]);
+
+  const hasNotifications = incomingRequests.length > 0 || acceptedRequests.length > 0;
+  const isProcessing = isAccepting || isDeclining;
+  
+  // Handle refresh
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+      toast.success('Notifications refreshed');
+    } catch (error) {
+      toast.error('Failed to refresh notifications');
+    }
+  };
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-100">
+        <div className="text-center space-y-4">
+          <div className="loading loading-spinner loading-lg text-primary"></div>
+          <p className="text-gray-600">Loading notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-100 px-4">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-error">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold">Failed to load notifications</h2>
+          <p className="text-gray-600">
+            {error.message || 'An error occurred while loading your notifications.'}
+          </p>
+          <button 
+            onClick={handleRefresh}
+            className="btn btn-primary mt-4"
+            disabled={isProcessing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="min-h-screen bg-base-100 py-8 md:py-12"
@@ -68,287 +167,152 @@ const NotificationsPage = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto max-w-4xl px-6 md:px-8 space-y-12">
+      <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4 }}
-          className="text-center space-y-4"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
         >
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center gap-4">
             <div className="p-3 bg-primary/10 rounded-full">
               <BellIcon className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Notifications
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600 text-sm sm:text-base">
                 Stay updated with your connections
               </p>
             </div>
-            {incomingRequests.length + acceptedRequests.length > 0 && (
-              <span className="badge badge-primary badge-lg px-3 py-2 text-sm font-semibold">
-                {incomingRequests.length + acceptedRequests.length}
-              </span>
-            )}
           </div>
+          
+          <button
+            onClick={handleRefresh}
+            disabled={isProcessing}
+            className="btn btn-ghost btn-sm sm:btn-md gap-2 self-end sm:self-auto"
+            aria-label="Refresh notifications"
+          >
+            <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
         </motion.div>
-
         <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div
-              className="flex justify-center py-20"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <span className="loading loading-spinner loading-lg"></span>
-            </motion.div>
-          ) : (
+          {hasNotifications ? (
             <motion.div
               variants={container}
               initial="hidden"
               animate="show"
-              className="space-y-16"
+              className="space-y-6"
             >
-              {/* Friend Requests Section */}
+              {/* Incoming Friend Requests */}
               {incomingRequests.length > 0 && (
-                <motion.section variants={item} className="space-y-8">
-                  <motion.div
-                    className="flex items-center gap-4 pb-4 border-b border-base-300"
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <motion.div
-                      className="p-2 bg-primary/10 rounded-lg"
-                      animate={{
-                        rotate: [0, 10, -10, 0],
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                        duration: 1.5,
-                      }}
-                    >
-                      <UserCheckIcon className="h-6 w-6 text-primary" />
-                    </motion.div>
-                    <div>
-                      <h2 className="text-2xl font-bold">Friend Requests</h2>
-                      <p className="text-gray-600">
-                        People who want to connect with you
-                      </p>
-                    </div>
-                    <span className="badge badge-primary badge-lg ml-auto px-3 py-2 font-semibold">
-                      {incomingRequests.length}
-                    </span>
-                  </motion.div>
-
-                  <motion.div className="space-y-6">
-                    {incomingRequests.map((request, index) => (
-                      <motion.div
+                <motion.div variants={item} className="space-y-4">
+                  <h2 className="text-xl font-semibold">Friend Requests</h2>
+                  <div className="space-y-4">
+                    {incomingRequests.map((request) => (
+                      <motion.div 
                         key={request._id}
-                        className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-base-200"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          delay: 0.1 * index,
-                          type: "spring",
-                          stiffness: 100,
-                          damping: 15,
-                        }}
-                        whileHover={{
-                          y: -4,
-                          transition: {
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 15,
-                          },
-                        }}
+                        variants={item}
+                        className="card bg-base-200 shadow-sm"
                       >
-                        <div className="card-body p-8">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-6">
-                              <motion.div
-                                className="avatar"
-                                whileHover={{ rotate: 5, scale: 1.05 }}
-                                transition={{ type: "spring", stiffness: 300 }}
-                              >
-                                <div className="w-16 h-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                                  <img
-                                    src={request.sender.profilePic}
-                                    alt={request.sender.fullName}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                        request.sender.fullName
-                                      )}&background=random`;
-                                    }}
-                                  />
-                                </div>
-                              </motion.div>
-                              <div className="space-y-3">
-                                <div>
-                                  <h3 className="font-bold text-lg">
-                                    {request.sender.fullName}
-                                  </h3>
-                                  <p className="text-gray-500 text-base mt-1">
-                                    Wants to be your language partner
-                                  </p>
-                                </div>
-                                <div className="flex gap-3">
-                                  <motion.button
-                                    className="btn btn-primary px-6 py-2"
-                                    onClick={() =>
-                                      acceptRequestMutation(request._id)
-                                    }
-                                    disabled={isAcceptPending}
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
-                                  >
-                                    {isAcceptPending ? (
-                                      <span className="loading loading-spinner loading-sm mr-2"></span>
-                                    ) : (
-                                      <UserCheckIcon className="h-4 w-4 mr-2" />
-                                    )}
-                                    Accept Request
-                                  </motion.button>
-                                  <motion.button
-                                    className="btn btn-outline btn-error px-4 py-2"
-                                    onClick={() => declineRequestMutation(request._id)}
-                                    disabled={isDeclinePending}
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
-                                  >
-                                    {isDeclinePending ? (
-                                      <span className="loading loading-spinner loading-sm mr-2"></span>
-                                    ) : (
-                                      <X className="h-4 w-4 mr-2" />
-                                    )}
-                                    {isDeclinePending ? 'Declining...' : 'Decline'}
-                                  </motion.button>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-sm text-gray-400 bg-base-200 px-3 py-1 rounded-full">
-                                {new Date(
-                                  request.createdAt
-                                ).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </motion.section>
-              )}
-
-              {/* Accepted Requests Section */}
-              {acceptedRequests.length > 0 && (
-                <motion.section variants={item} className="space-y-8">
-                  <motion.div
-                    className="flex items-center gap-4 pb-4 border-b border-base-300"
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <div className="p-2 bg-success/10 rounded-lg">
-                      <BellIcon className="h-6 w-6 text-success" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold">New Connections</h2>
-                      <p className="text-gray-600">
-                        Recently accepted friend requests
-                      </p>
-                    </div>
-                    <span className="badge badge-success badge-lg ml-auto px-3 py-2 font-semibold">
-                      {acceptedRequests.length}
-                    </span>
-                  </motion.div>
-
-                  <div className="space-y-6">
-                    {acceptedRequests.map((notification, index) => (
-                      <motion.div
-                        key={notification._id}
-                        className="card bg-base-100 shadow-lg border border-base-200"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          delay: 0.1 * index,
-                          type: "spring",
-                          stiffness: 100,
-                          damping: 15,
-                        }}
-                        whileHover={{
-                          y: -2,
-                          transition: {
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 15,
-                          },
-                        }}
-                      >
-                        <div className="card-body p-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-5">
+                        <div className="card-body">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
                               <div className="avatar">
-                                <div className="w-14 h-14 rounded-full ring ring-success ring-offset-base-100 ring-offset-2">
-                                  <img
-                                    src={notification.recipient.profilePic}
-                                    alt={notification.recipient.fullName}
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                        notification.recipient.fullName
-                                      )}&background=random`;
-                                    }}
+                                <div className="w-12 h-12 rounded-full">
+                                  <img 
+                                    src={request.sender?.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.sender?.fullName || 'User')}`} 
+                                    alt={request.sender?.fullName || 'User'}
                                   />
                                 </div>
                               </div>
-                              <div className="space-y-2">
-                                <h3 className="font-bold text-lg">
-                                  {notification.recipient.fullName}
-                                </h3>
-                                <p className="text-base">
-                                  Accepted your friend request! You can now
-                                  start chatting.
-                                </p>
-                                <p className="text-sm flex items-center text-gray-500">
-                                  <ClockIcon className="h-4 w-4 mr-2" />
-                                  Recently
-                                </p>
+                              <div>
+                                <h3 className="font-medium">{request.sender?.fullName || 'User'}</h3>
+                                <p className="text-sm text-gray-500">Wants to be your friend</p>
                               </div>
                             </div>
-                            <div className="badge badge-success badge-lg gap-2 px-3 py-2">
-                              <MessageSquareIcon className="h-4 w-4" />
-                              New Friend
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => acceptRequest(request._id)}
+                                disabled={isProcessing}
+                                className="btn btn-sm btn-primary"
+                              >
+                                {isAccepting ? 'Accepting...' : 'Accept'}
+                              </button>
+                              <button 
+                                onClick={() => declineRequest(request._id)}
+                                disabled={isProcessing}
+                                className="btn btn-sm btn-ghost"
+                              >
+                                {isDeclining ? 'Declining...' : 'Decline'}
+                              </button>
                             </div>
                           </div>
                         </div>
                       </motion.div>
                     ))}
                   </div>
-                </motion.section>
+                </motion.div>
               )}
 
-              {/* Empty State */}
-              {incomingRequests.length === 0 &&
-                acceptedRequests.length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.4 }}
-                    className="py-12"
-                  >
-                    <NoNotificationsFound />
-                  </motion.div>
-                )}
+              {/* Accepted Requests */}
+              {acceptedRequests.length > 0 && (
+                <motion.div variants={item} className="space-y-4">
+                  <h2 className="text-xl font-semibold">Recent Connections</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {acceptedRequests.map((request) => (
+                      <motion.div 
+                        key={request._id}
+                        variants={item}
+                        className="card bg-base-200 shadow-sm"
+                      >
+                        <div className="card-body">
+                          <div className="flex items-center gap-4">
+                            <div className="avatar">
+                              <div className="w-12 h-12 rounded-full">
+                                <img 
+                                  src={request.recipient?.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.recipient?.fullName || 'User')}`} 
+                                  alt={request.recipient?.fullName || 'User'}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{request.recipient?.fullName || 'User'}</h3>
+                              <p className="text-sm text-gray-500">Connected</p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div 
+              className="text-center py-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="inline-block p-4 bg-base-200 rounded-full mb-4">
+                <BellIcon className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-medium mb-2">No notifications yet</h3>
+              <p className="text-gray-500 mb-6">
+                When you get friend requests or new connections, they'll appear here.
+              </p>
+              <button 
+                onClick={handleRefresh}
+                className="btn btn-primary gap-2"
+                disabled={isProcessing}
+              >
+                <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
+                {isProcessing ? 'Refreshing...' : 'Refresh'}
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
