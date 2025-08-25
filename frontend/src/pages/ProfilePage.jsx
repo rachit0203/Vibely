@@ -145,14 +145,7 @@ const ProfilePage = () => {
               <div className="mt-12 border-t border-error/20 pt-6">
                 <h2 className="text-xl font-semibold text-error mb-4">Danger Zone</h2>
                 <div className="space-y-4">
-                  <button
-                    type="button"
-                    onClick={handleChangePassword}
-                    className="btn btn-outline btn-error w-full md:w-auto"
-                  >
-                    <KeyRound className="size-4 mr-2" />
-                    Change Password
-                  </button>
+                  
                   
                   <button
                     type="button"
