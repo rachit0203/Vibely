@@ -68,9 +68,12 @@ const NotificationsPage = () => {
         return { incomingReqs: [], acceptedReqs: [] };
       }
     },
-    retry: 2,
-    refetchOnWindowFocus: true,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
+    refetchOnWindowFocus: false, // Disable refetch on window focus
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    cacheTime: 1000 * 60 * 15, // 15 minutes
+    refetchOnMount: true,
+    refetchOnReconnect: false
   });
 
   // Accept friend request mutation
@@ -98,13 +101,23 @@ const NotificationsPage = () => {
     },
   });
 
-  // Process notifications data
+  // Helper function to deduplicate notifications by ID
+  const deduplicateNotifications = (notifications) => {
+    const seen = new Set();
+    return notifications.filter(notification => {
+      const duplicate = seen.has(notification._id);
+      seen.add(notification._id);
+      return !duplicate;
+    });
+  };
+
+  // Process notifications data with deduplication
   const { incomingRequests, acceptedRequests } = React.useMemo(() => {
     if (!friendRequests) return { incomingRequests: [], acceptedRequests: [] };
     
     return {
-      incomingRequests: (friendRequests.incomingReqs || []).filter(req => req?.sender),
-      acceptedRequests: (friendRequests.acceptedReqs || []).filter(req => req?.recipient)
+      incomingRequests: deduplicateNotifications((friendRequests.incomingReqs || []).filter(req => req?.sender)),
+      acceptedRequests: deduplicateNotifications((friendRequests.acceptedReqs || []).filter(req => req?.recipient))
     };
   }, [friendRequests]);
 
@@ -303,7 +316,7 @@ const NotificationsPage = () => {
               </div>
               <h3 className="text-xl font-medium mb-2">No notifications yet</h3>
               <p className="text-gray-500 mb-6">
-                When you get friend requests or new connections, they'll appear here.
+                When you get friend requests or new connections, they’ll appear here.
               </p>
               <button 
                 onClick={handleRefresh}

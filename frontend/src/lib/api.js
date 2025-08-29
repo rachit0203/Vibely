@@ -55,14 +55,14 @@ export const sendFriendRequest = async (userId) => {
 
 export const getFriendRequests = async () => {
   try {
-    console.log('Making request to /users/friend-requests');
+    // console.log('Making request to /users/friend-requests');
     const res = await axiosInstance.get(`/users/friend-requests`, {
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       }
     });
-    console.log('Friend requests response:', res);
+    // console.log('Friend requests response:', res);
     return res.data;
   } catch (error) {
     console.error('Error in getFriendRequests:', {
